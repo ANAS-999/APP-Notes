@@ -1,0 +1,23 @@
+{
+    "files.exclude": {
+        ".dart_tool": true,
+        ".flutter-plugins": true,
+        ".flutter-plugins-dependencies": true,
+        ".idea": true,
+        ".metadata": true,
+        ".vscode": true,
+        "analysis_options": true,
+        "analysis_options.yaml": true,
+        "build": true,
+        "devtools_options.yaml": true,
+        "ios": true,
+        "linux": true,
+        "macos": true,
+        "test": true,
+        "web": true,
+        "windows": true,
+        "animefly.iml": true,
+        "pubspec.lock": true,
+        ".gitignore": true,
+    }
+}
