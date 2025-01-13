@@ -23,23 +23,19 @@ class _HomePageState extends State<HomePage> {
   List<Widget> pages = [];
 
   //! Functions
-  initPages() {
-    pages = [
-      ListNotePage(appName: widget.appName),
-      SettingsPage(appName: widget.appName, version: widget.version),
-    ];
-  }
-
   @override
   void initState() {
-    initPages();
-
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    pages = [
+      ListNotePage(appName: widget.appName),
+      SettingsPage(appName: widget.appName, version: widget.version),
+    ];
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(

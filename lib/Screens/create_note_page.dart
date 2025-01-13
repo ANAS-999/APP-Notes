@@ -15,12 +15,6 @@ class CreateNotePage extends StatefulWidget {
 class _CreateNotePageState extends State<CreateNotePage> {
   //! Variables
   int colorIndex = 0;
-  final List<Color> listColors = [
-    Colors.blueAccent,
-    Colors.indigoAccent,
-    Colors.red,
-    Colors.green.shade600,
-  ];
   final lineTitle = TextEditingController();
   final lineContent = TextEditingController();
 
@@ -35,7 +29,7 @@ class _CreateNotePageState extends State<CreateNotePage> {
           title: title,
           body: content,
           date: DateTime.now().toString(),
-          color: '0xFF3A424D',
+          color: getStrColorFromIndex(colorIndex),
         ),
       );
 
@@ -57,6 +51,8 @@ class _CreateNotePageState extends State<CreateNotePage> {
         child: SingleChildScrollView(
           child: Stack(
             children: [
+
+              //! Wave Background
               ShaderMask(
                 shaderCallback: (bounds) {
                   return const LinearGradient(
@@ -87,6 +83,8 @@ class _CreateNotePageState extends State<CreateNotePage> {
                   ),
                 ),
               ),
+
+              //! Page Content
               Column(
                 children: [
                   spaceV(16),
@@ -184,8 +182,6 @@ class _CreateNotePageState extends State<CreateNotePage> {
   }
 
   Widget colorWidget(int index, Color color) {
-    //final theme = Theme.of(context);
-
     return GestureDetector(
       onTap: () => setState(() => colorIndex = index),
       child: Container(

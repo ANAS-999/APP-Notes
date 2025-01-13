@@ -6,6 +6,47 @@ import 'package:note_app/Dialogs/theme_dialog.dart';
 import 'package:note_app/Dialogs/update_dialog.dart';
 import 'package:note_app/Dialogs/about_dialog.dart' as about;
 
+//! Variables
+final List<Color> listColors = [
+  Colors.blueAccent,
+  Colors.indigoAccent,
+  Colors.red,
+  Colors.green.shade600,
+];
+
+//! Colors
+getStrColorFromIndex(int index) {
+  switch (index) {
+    case 0:
+      return 'blue';
+    case 1:
+      return 'indigo';
+    case 2:
+      return 'red';
+    case 3:
+      return 'green';
+
+    default:
+      return 'blue';
+  }
+}
+
+getIndexColorFromStr(String color) {
+  switch (color) {
+    case 'blue':
+      return 0;
+    case 'indigo':
+      return 1;
+    case 'red':
+      return 2;
+    case 'green':
+      return 3;
+
+    default:
+      return 0;
+  }
+}
+
 //! Themes
 bool isDarkMode(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark;
