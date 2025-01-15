@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:note_app/Screens/create_note_page.dart';
 import 'package:note_app/Screens/list_note_page.dart';
 import 'package:note_app/Screens/settings_page.dart';
 
@@ -49,18 +48,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       //! Pages
       body: SafeArea(child: pages[navBarIndex]),
-
-      //! Floating Action Button
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          CupertinoPageRoute(builder: (context) => const CreateNotePage()),
-        ),
-        child: Icon(
-          CupertinoIcons.pencil_outline,
-          color: isDarkMode(context) ? Colors.black : Colors.white,
-        ),
-      ),
 
       //! Navigation Bar
       bottomNavigationBar: NavigationBarTheme(

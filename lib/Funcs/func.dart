@@ -165,3 +165,31 @@ showDialogUpdate(String appName, String version, BuildContext context) {
     ),
   );
 }
+
+void showAlertDialog(BuildContext context,
+    {required String title,
+    required String content,
+    required String buttonText,
+    required VoidCallback onConfirm}) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: onConfirm,
+            child: Text(buttonText),
+          ),
+        ],
+      );
+    },
+  );
+}

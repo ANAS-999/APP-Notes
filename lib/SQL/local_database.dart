@@ -70,6 +70,23 @@ class NotesDatabase {
     );
   }
 
+  //! Update Data
+  Future<void> updateData(NoteData data) async {
+    Database? db = await database;
+    await db!.update(
+      tableName,
+      {
+        'id': data.id,
+        'body': data.body,
+        'date': data.date,
+        'color': data.color,
+        'title': data.title,
+      },
+      where: 'id = ?',
+      whereArgs: [data.id],
+    );
+  }
+
   //! Remove Data
   Future<void> deleteData(NoteData data) async {
     Database? db = await database;

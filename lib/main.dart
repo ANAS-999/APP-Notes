@@ -33,6 +33,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
+  void initState() {
+    getVersion();
+
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (_, provider, __) {
@@ -41,7 +48,6 @@ class _MyAppState extends State<MyApp> {
           darkTheme: darkTheme,
           themeMode: provider.themeMode,
           debugShowCheckedModeBanner: false,
-          
           home: HomePage(appName: appName, version: version),
         );
       },

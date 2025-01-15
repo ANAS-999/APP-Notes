@@ -20,6 +20,7 @@ ThemeData lightTheme = ThemeData(
   ),
   appBarTheme: AppBarTheme(
     elevation: 0,
+    scrolledUnderElevation: 0.0,
     backgroundColor: Colors.transparent,
     systemOverlayStyle: SystemUiOverlayStyle.dark.copyWith(
       statusBarColor: Colors.transparent,

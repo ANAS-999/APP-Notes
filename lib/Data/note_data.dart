@@ -12,4 +12,20 @@ class NoteData {
     required this.color,
     required this.title,
   });
+
+  NoteData copyWith({
+    int? id,
+    String? body,
+    String? date,
+    String? color,
+    String? title,
+  }) {
+    return NoteData(
+      id: id ?? this.id,
+      body: body ?? this.body,
+      date: date ?? this.date,
+      color: color ?? this.color,
+      title: title ?? this.title,
+    );
+  }
 }
