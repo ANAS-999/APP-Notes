@@ -32,7 +32,7 @@
 ## ✨ Features
 
 - 🎨 **Monet Dynamic Color (Android 12+)**: Dynamically harmonizes with the user's wallpaper color palette via `dynamic_color`.
-- 📐 **Pure Material 3 Aesthetic**: Tachiyomi & Mihon inspired UI with collapsible `SliverAppBar.large`, tonal cards (`surfaceContainer`), rounded dialogs (28dp), and zero hardcoded colors.
+- 📐 **Pure Material 3 Aesthetic**: Native android apps inspired UI with collapsible `SliverAppBar.large`, tonal cards (`surfaceContainer`), rounded dialogs (28dp), and zero hardcoded colors.
 - 📱 **Adaptive Navigation**: Seamless transition between mobile `NavigationBar` (pill indicator) and wide-screen/tablet `NavigationRail`.
 - 🏷️ **Harmonized Note Color Palettes**: Tag and organize notes using soft, harmonized M3 color schemes.
 - 🗄️ **Offline SQLite Database**: Fast, reliable local persistence using `sqflite` with singleton connection pooling.
