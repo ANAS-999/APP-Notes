@@ -1,98 +1,87 @@
 import 'dart:async';
-
-import 'package:note_app/Data/note_data.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:flutter/foundation.dart';
+import 'package:note_app/Data/note_data.dart';
 
 class NotesDatabase {
-  //! Variables
-  static Database? _db;
-  final String fileName = 'note_database.db';
-  final String tableName = 'notes';
+  static final NotesDatabase _instance = NotesDatabase._internal();
+  factory NotesDatabase() => _instance;
+  NotesDatabase._internal();
 
-  //! Init Database
-  Future<Database?> get database async {
-    if (_db == null) {
-      _db = await init();
-      return _db;
-    }
-    return _db;
+  static const String _fileName = 'note_database.db';
+  static const String _tableName = 'notes';
+
+  Database? _db;
+
+  Future<Database> get database async {
+    _db ??= await _initDatabase();
+    return _db!;
   }
 
-  init() async {
-    String path = await getDatabasesPath();
-    String file = join(path, fileName);
-    Database db = await openDatabase(file, onCreate: _onCreate, version: 1);
+  Future<Database> _initDatabase() async {
+    final path = await getDatabasesPath();
+    final dbPath = join(path, _fileName);
 
-    return db;
-  }
-
-  _onCreate(Database db, int version) async {
-    await db.execute(
-      'CREATE TABLE $tableName(id INTEGER NOT NULL PRIMARY KEY, title TEXT, body TEXT, date TEXT, color TEXT)',
-    );
-
-    if (kDebugMode) {
-      print('CREATE DATABASE ✔');
-    }
-  }
-
-  //! Get Data
-  Future<List<NoteData>> readData() async {
-    Database? db = await database;
-    final List<Map<String, dynamic>> maps = await db!.query(tableName);
-
-    return List.generate(maps.length, (i) {
-      return NoteData(
-        id: maps[i]['id'],
-        body: maps[i]['body'],
-        date: maps[i]['date'],
-        color: maps[i]['color'],
-        title: maps[i]['title'],
-      );
-    });
-  }
-
-  //! Add Data
-  Future<void> insertData(NoteData data) async {
-    Database? db = await database;
-    await db!.insert(
-      tableName,
-      {
-        'id': data.id,
-        'body': data.body,
-        'date': data.date,
-        'color': data.color,
-        'title': data.title,
+    return openDatabase(
+      dbPath,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE $_tableName(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            body TEXT NOT NULL,
+            date TEXT NOT NULL,
+            color TEXT NOT NULL
+          )
+        ''');
       },
+    );
+  }
+
+  Future<List<NoteData>> readData() async {
+    final db = await database;
+    final maps = await db.query(_tableName, orderBy: 'id DESC');
+    return maps.map(NoteData.fromMap).toList();
+  }
+
+  Future<int> insertData(NoteData note) async {
+    final db = await database;
+    return db.insert(
+      _tableName,
+      note.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  //! Update Data
-  Future<void> updateData(NoteData data) async {
-    Database? db = await database;
-    await db!.update(
-      tableName,
-      {
-        'id': data.id,
-        'body': data.body,
-        'date': data.date,
-        'color': data.color,
-        'title': data.title,
-      },
+  Future<int> updateData(NoteData note) async {
+    final db = await database;
+    return db.update(
+      _tableName,
+      note.toMap(),
       where: 'id = ?',
-      whereArgs: [data.id],
+      whereArgs: [note.id],
     );
   }
 
-  //! Remove Data
-  Future<void> deleteData(NoteData data) async {
-    Database? db = await database;
-    await db?.rawDelete(
-      'DELETE FROM $tableName WHERE id = ?',
-      [data.id],
+  Future<int> deleteData(NoteData note) async {
+    final db = await database;
+    return db.delete(
+      _tableName,
+      where: 'id = ?',
+      whereArgs: [note.id],
+    );
+  }
+
+  Future<void> deleteMultiple(List<int> ids) async {
+    if (ids.isEmpty) return;
+    final db = await database;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    await db.delete(
+      _tableName,
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
     );
   }
 }
+

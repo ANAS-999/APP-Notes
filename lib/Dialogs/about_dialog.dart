@@ -1,8 +1,6 @@
-import 'package:fluid_dialog/fluid_dialog.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class AboutDialog extends StatefulWidget {
+class AboutDialog extends StatelessWidget {
   final String appName;
   final String version;
 
@@ -13,97 +11,75 @@ class AboutDialog extends StatefulWidget {
   });
 
   @override
-  State<AboutDialog> createState() => _AboutDialog();
-}
-
-class _AboutDialog extends State<AboutDialog> {
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return SizedBox(
-      width: 301,
-      child: Container(
-        padding: const EdgeInsets.all(10),
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      icon: Container(
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(15),
+          color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            //! Title
-            Row(
-              children: [
-                Material(
-                  color: Colors.transparent,
-                  child: IconButton(
-                    onPressed: () => DialogNavigator.of(context).close(),
-                    splashRadius: 20,
-                    icon: const Icon(CupertinoIcons.xmark, size: 20),
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  'About Us',
-                  style: theme.textTheme.titleLarge,
-                ),
-              ],
+        padding: const EdgeInsets.all(12),
+        child: Image.asset('assets/icons/logo.png'),
+      ),
+      title: Text(
+        appName,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 20),
-            //! Image
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 65,
-                  alignment: Alignment.center,
-                  child: Image.asset('assets/icons/logo.png'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            //! App Name
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  alignment: Alignment.center,
-                  child: Text(
-                    widget.appName,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            //! Version
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  alignment: Alignment.center,
-                  child: Text(
-                    'version : ${widget.version}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Divider(thickness: 1),
-            //! By
-            Container(
-              alignment: Alignment.center,
-              child: Text(
-                'APP BY ANAS',
-                style: theme.textTheme.bodySmall,
+            child: Text(
+              'v$version',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSecondaryContainer,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'A clean, intuitive note-taking app crafted with Material You design and local SQLite storage.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Created by ANAS',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
+      actions: [
+        FilledButton.tonal(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:note_app/Data/note_data.dart';
+import 'package:note_app/Widgets/note_color_picker.dart';
 
 import '../Funcs/func.dart';
 import '../SQL/local_database.dart';
@@ -15,273 +15,225 @@ class NotePage extends StatefulWidget {
 }
 
 class _NotePageState extends State<NotePage> {
-  //! Variables
-  String title = 'Title';
-  bool inEditMode = false;
-  FocusNode focusNodeNote = FocusNode();
-  FocusNode focusNodeNewTitle = FocusNode();
+  late NoteData _currentNote;
+  bool _inEditMode = false;
+  final FocusNode _bodyFocusNode = FocusNode();
+  final FocusNode _titleFocusNode = FocusNode();
 
-  final TextEditingController lineNote = TextEditingController();
-  final TextEditingController lineNewTitle = TextEditingController();
-
-  //! Functions
-  onDeleteClick() {
-    showAlertDialog(
-      context,
-      title: 'Delete Note',
-      buttonText: 'Delete',
-      content: 'Are you sure you want to delete this note?',
-      onConfirm: () {
-        Navigator.pop(context);
-        NotesDatabase().deleteData(widget.note);
-        Navigator.pop(context);
-      },
-    );
-  }
-
-  onCheckClick() {
-    if (lineNote.text.isEmpty) {
-      showSnackBar(context, 'Note cannot be empty!');
-      return;
-    }
-
-    if (lineNote.text == widget.note.body) {
-      setState(() => inEditMode = false);
-      return;
-    }
-
-    showAlertDialog(
-      context,
-      title: 'Update Note',
-      buttonText: 'Update',
-      content: 'Are you sure you want to update this note?',
-      onConfirm: () {
-        NoteData data = widget.note.copyWith(body: lineNote.text);
-        NotesDatabase().updateData(data);
-        Navigator.pop(context);
-
-        setState(() => inEditMode = false);
-      },
-    );
-  }
-
-  onEditClick() {
-    setState(() {
-      inEditMode = true;
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      focusNodeNote.requestFocus();
-    });
-  }
-
-  onTitleClick() {
-    if (inEditMode) {
-      return;
-    }
-
-    final theme = Theme.of(context);
-
-    lineNewTitle.text = title;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      focusNodeNewTitle.requestFocus();
-    });
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Update Title'),
-          content: Container(
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: TextField(
-              controller: lineNewTitle,
-              focusNode: focusNodeNewTitle,
-              keyboardType: TextInputType.name,
-              decoration: InputDecoration(
-                hintText: 'New Title',
-                border: InputBorder.none,
-                prefixIcon: const Icon(CupertinoIcons.book),
-                prefixIconColor: theme.textTheme.bodySmall!.color,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: onUpdateTitle,
-              child: const Text('Update'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  onBackClick() {
-    if (inEditMode) {
-      setState(() => inEditMode = false);
-      lineNote.text = widget.note.body;
-
-      return;
-    }
-
-    Navigator.pop(context);
-  }
-
-  onUpdateTitle() {
-    if (lineNewTitle.text.isEmpty) {
-      showSnackBar(context, 'Title cannot be empty!');
-      return;
-    }
-
-    if (lineNewTitle.text == title) {
-      Navigator.pop(context);
-      return;
-    }
-
-    NoteData data = widget.note.copyWith(title: lineNewTitle.text);
-    NotesDatabase().updateData(data);
-    Navigator.pop(context);
-
-    setState(() {
-      title = lineNewTitle.text;
-    });
-  }
+  late final TextEditingController _titleController;
+  late final TextEditingController _bodyController;
 
   @override
   void initState() {
     super.initState();
+    _currentNote = widget.note;
+    _titleController = TextEditingController(text: _currentNote.title);
+    _bodyController = TextEditingController(text: _currentNote.body);
+  }
 
-    title = widget.note.title;
-    lineNote.text = widget.note.body;
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    _bodyFocusNode.dispose();
+    _titleFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onDeleteClick() {
+    showAlertDialog(
+      context,
+      title: 'Delete Note?',
+      buttonText: 'Delete',
+      content: 'This note will be permanently deleted.',
+      onConfirm: () async {
+        Navigator.pop(context);
+        await NotesDatabase().deleteData(_currentNote);
+        if (!mounted) return;
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  Future<void> _onSaveClick() async {
+    final newTitle = _titleController.text.trim();
+    final newBody = _bodyController.text.trim();
+
+    if (newTitle.isEmpty && newBody.isEmpty) {
+      showToast('Note cannot be empty');
+      return;
+    }
+
+    final updatedNote = _currentNote.copyWith(
+      title: newTitle.isEmpty ? 'Untitled' : newTitle,
+      body: newBody,
+    );
+
+    await NotesDatabase().updateData(updatedNote);
+
+    if (!mounted) return;
+    setState(() {
+      _currentNote = updatedNote;
+      _inEditMode = false;
+    });
+    showToast('Note updated');
+  }
+
+  void _onEditClick() {
+    setState(() {
+      _inEditMode = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bodyFocusNode.requestFocus();
+    });
+  }
+
+  void _onBackClick() {
+    if (_inEditMode) {
+      setState(() {
+        _inEditMode = false;
+        _titleController.text = _currentNote.title;
+        _bodyController.text = _currentNote.body;
+      });
+      return;
+    }
+    Navigator.pop(context);
+  }
+
+  Future<void> _changeNoteColor(int index) async {
+    final newColor = getStrColorFromIndex(index);
+    final updatedNote = _currentNote.copyWith(color: newColor);
+    await NotesDatabase().updateData(updatedNote);
+    if (!mounted) return;
+    setState(() {
+      _currentNote = updatedNote;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final height = MediaQuery.of(context).size.height;
+    final colorScheme = theme.colorScheme;
+    final Color surfaceColor = getNoteSurfaceColor(context, _currentNote.color);
 
     return Scaffold(
-      appBar: appBar(),
+      backgroundColor: surfaceColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: _onBackClick,
+        ),
+        actions: [
+          if (!_inEditMode) ...[
+            IconButton(
+              tooltip: 'Edit note',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: _onEditClick,
+            ),
+            IconButton(
+              tooltip: 'Delete note',
+              icon: const Icon(Icons.delete_outline_rounded),
+              onPressed: _onDeleteClick,
+            ),
+          ] else ...[
+            IconButton.filledTonal(
+              tooltip: 'Save changes',
+              icon: const Icon(Icons.check_rounded, size: 24),
+              onPressed: _onSaveClick,
+            ),
+          ],
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Stack(
-            children: [
-              //! Wave Background
-              ShaderMask(
-                shaderCallback: (bounds) {
-                  return const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black,
-                      Colors.transparent,
-                    ],
-                    stops: [0.0, 0.05, 0.87],
-                  ).createShader(bounds);
-                },
-                blendMode: BlendMode.dstIn,
-                child: RotationTransition(
-                  turns: const AlwaysStoppedAnimation(180 / 360),
-                  child: Opacity(
-                    opacity: 0.2,
-                    child: Container(
-                      child: showSvg(
-                        'wave',
-                        width: null,
-                        height: height,
-                        fit: BoxFit.cover,
-                        color: listColors[getIndexColorFromStr(
-                          widget.note.color,
-                        )],
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      enabled: _inEditMode,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Title',
+                        hintStyle: theme.textTheme.headlineSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        filled: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          formatNoteDate(_currentNote.date),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _bodyController,
+                      focusNode: _bodyFocusNode,
+                      enabled: _inEditMode,
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLines: null,
+                      minLines: 12,
+                      keyboardType: TextInputType.multiline,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        height: 1.5,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Note details...',
+                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        ),
+                        filled: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-
-              //! Page Content
-              Column(
-                children: [
-                  spaceV(12),
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: TextField(
-                      maxLines: null,
-                      enabled: inEditMode,
-                      controller: lineNote,
-                      focusNode: focusNodeNote,
-                      keyboardType: TextInputType.text,
-                      style: theme.textTheme.bodyLarge,
-                      decoration: InputDecoration(
-                        hintText: 'Note...',
-                        border: InputBorder.none,
-                        hintStyle: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ),
-                ],
+            ),
+            if (_inEditMode)
+              NoteColorPicker(
+                selectedIndex: getIndexColorFromStr(_currentNote.color),
+                onColorSelected: _changeNoteColor,
               ),
-            ],
-          ),
+          ],
         ),
       ),
-    );
-  }
-
-  PreferredSizeWidget appBar() {
-    final theme = Theme.of(context);
-
-    return AppBar(
-      title: GestureDetector(
-        onTap: onTitleClick,
-        child: Text(title.capitalize()),
-      ),
-      leading: IconButton(
-        onPressed: onBackClick,
-        icon: showSvg('back', color: theme.iconTheme.color),
-      ),
-      actions: [
-        Visibility(
-          visible: !inEditMode,
-          child: IconButton(
-            onPressed: onEditClick,
-            icon: const Icon(CupertinoIcons.pen),
-          ),
-        ),
-        Visibility(
-          visible: !inEditMode,
-          child: IconButton(
-            onPressed: onDeleteClick,
-            iconSize: 20,
-            icon: const Icon(CupertinoIcons.trash),
-          ),
-        ),
-        Visibility(
-          visible: inEditMode,
-          child: IconButton(
-            onPressed: onCheckClick,
-            icon: const Icon(CupertinoIcons.checkmark),
-          ),
-        ),
-      ],
     );
   }
 }
+
+

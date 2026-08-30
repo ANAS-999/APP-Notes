@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:note_app/Funcs/func.dart';
 import 'package:note_app/SQL/local_database.dart';
+import 'package:note_app/Widgets/note_color_picker.dart';
 
 import '../Data/note_data.dart';
 
@@ -13,189 +13,128 @@ class CreateNotePage extends StatefulWidget {
 }
 
 class _CreateNotePageState extends State<CreateNotePage> {
-  //! Variables
-  int colorIndex = 0;
-  final lineTitle = TextEditingController();
-  final lineContent = TextEditingController();
+  int _colorIndex = 0;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _bodyController = TextEditingController();
 
-  //! Functions
-  onSaveNote() {
-    String title = lineTitle.text;
-    String content = lineContent.text;
+  Future<void> _saveNote() async {
+    final title = _titleController.text.trim();
+    final content = _bodyController.text.trim();
 
-    if (title.isNotEmpty && content.isNotEmpty) {
-      NotesDatabase().insertData(
-        NoteData(
-          title: title,
-          body: content,
-          date: DateTime.now().toString(),
-          color: getStrColorFromIndex(colorIndex),
-        ),
-      );
-
-      showToast('Note saved');
-      Navigator.pop(context);
-    } else {
-      showToast('Please fill all fields');
+    if (title.isEmpty && content.isEmpty) {
+      showToast('Note is empty');
+      return;
     }
+
+    await NotesDatabase().insertData(
+      NoteData(
+        title: title.isEmpty ? 'Untitled' : title,
+        body: content,
+        date: DateTime.now().toIso8601String(),
+        color: getStrColorFromIndex(_colorIndex),
+      ),
+    );
+
+    showToast('Note saved');
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final height = MediaQuery.of(context).size.height;
+    final colorScheme = theme.colorScheme;
+    final String selectedColorStr = getStrColorFromIndex(_colorIndex);
+    final Color surfaceColor = getNoteSurfaceColor(context, selectedColorStr);
 
     return Scaffold(
-      appBar: appBar(),
+      backgroundColor: surfaceColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton.filledTonal(
+            tooltip: 'Save note',
+            icon: const Icon(Icons.check_rounded, size: 24),
+            onPressed: _saveNote,
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Stack(
-            children: [
-
-              //! Wave Background
-              ShaderMask(
-                shaderCallback: (bounds) {
-                  return const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black,
-                      Colors.transparent,
-                    ],
-                    stops: [0.0, 0.05, 0.87],
-                  ).createShader(bounds);
-                },
-                blendMode: BlendMode.dstIn,
-                child: RotationTransition(
-                  turns: const AlwaysStoppedAnimation(180 / 360),
-                  child: Opacity(
-                    opacity: 0.2,
-                    child: Container(
-                      child: showSvg(
-                        'wave',
-                        width: null,
-                        height: height,
-                        fit: BoxFit.cover,
-                        color: listColors[colorIndex],
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _titleController,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                    ),
-                  ),
-                ),
-              ),
-
-              //! Page Content
-              Column(
-                children: [
-                  spaceV(16),
-
-                  //! Title
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: TextField(
-                      maxLines: 1,
-                      controller: lineTitle,
-                      keyboardType: TextInputType.text,
                       decoration: InputDecoration(
                         hintText: 'Title',
-                        hintStyle: theme.textTheme.bodySmall,
+                        hintStyle: theme.textTheme.headlineSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        filled: false,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.only(top: 11),
-                        prefixIcon: const Icon(CupertinoIcons.book_fill),
-                        prefixIconColor: theme.textTheme.bodySmall!.color,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                  ),
-
-                  spaceV(16),
-
-                  //! Color
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        colorWidget(0, Colors.blueAccent),
-                        colorWidget(1, Colors.indigoAccent),
-                        colorWidget(2, Colors.red),
-                        colorWidget(3, Colors.green.shade600),
-                      ],
-                    ),
-                  ),
-
-                  spaceV(16),
-
-                  //! Content
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: TextField(
-                      minLines: 5,
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _bodyController,
+                      textCapitalization: TextCapitalization.sentences,
                       maxLines: null,
-                      controller: lineContent,
+                      minLines: 12,
                       keyboardType: TextInputType.multiline,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        height: 1.5,
+                      ),
                       decoration: InputDecoration(
-                        hintText: 'Details',
+                        hintText: 'Note details...',
+                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        ),
+                        filled: false,
                         border: InputBorder.none,
-                        hintStyle: theme.textTheme.bodySmall,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                  ),
-
-                  spaceV(16),
-                ],
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: onSaveNote,
-        backgroundColor: listColors[colorIndex],
-        child: Icon(
-          Icons.check,
-          color: isDarkMode(context) ? Colors.black : Colors.white,
-        ),
-      ),
-    );
-  }
-
-  PreferredSizeWidget appBar() {
-    final theme = Theme.of(context);
-
-    return AppBar(
-      centerTitle: true,
-      title: const Text('Create Note'),
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: showSvg('back', color: theme.iconTheme.color),
-      ),
-    );
-  }
-
-  Widget colorWidget(int index, Color color) {
-    return GestureDetector(
-      onTap: () => setState(() => colorIndex = index),
-      child: Container(
-        height: 32,
-        width: 44,
-        decoration: BoxDecoration(
-          color: color,
-          border: Border.all(
-            color: Colors.black.withOpacity(0.5),
-            width: index == colorIndex ? 4 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
+            ),
+            NoteColorPicker(
+              selectedIndex: _colorIndex,
+              onColorSelected: (index) => setState(() => _colorIndex = index),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+

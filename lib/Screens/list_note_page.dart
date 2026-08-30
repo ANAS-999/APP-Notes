@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:note_app/Data/note_data.dart';
 import 'package:note_app/Screens/note_page.dart';
+import 'package:note_app/Widgets/note_card.dart';
 
 import '../Funcs/func.dart';
 import '../SQL/local_database.dart';
@@ -16,29 +16,38 @@ class ListNotePage extends StatefulWidget {
 }
 
 class _ListNotePageState extends State<ListNotePage> {
-  //! Variables
-  bool inSelectMode = false;
-  List<bool> listSelected = [];
-  List<NoteData> listNotes = [];
+  final Set<int> _selectedNoteIds = {};
+  bool _inSelectMode = false;
+  List<NoteData> _notes = [];
+  bool _isLoading = true;
 
-  //! Functions
-  getNotes() async {
-    await NotesDatabase().readData().then(
-          (onValue) => {
-            setState(() {
-              listNotes = onValue;
-              listSelected = List.generate(listNotes.length, (index) => false);
-            })
-          },
-        );
+  @override
+  void initState() {
+    super.initState();
+    _loadNotes();
   }
 
-  onNoteClick(NoteData note) {
-    if (inSelectMode) {
-      int index = listNotes.indexOf(note);
+  Future<void> _loadNotes() async {
+    final notes = await NotesDatabase().readData();
+    if (!mounted) return;
+    setState(() {
+      _notes = notes;
+      _isLoading = false;
+    });
+  }
 
+  void _onNoteClick(NoteData note) {
+    if (_inSelectMode) {
+      if (note.id == null) return;
       setState(() {
-        listSelected[index] = !listSelected[index];
+        if (_selectedNoteIds.contains(note.id)) {
+          _selectedNoteIds.remove(note.id);
+          if (_selectedNoteIds.isEmpty) {
+            _inSelectMode = false;
+          }
+        } else {
+          _selectedNoteIds.add(note.id!);
+        }
       });
       return;
     }
@@ -46,261 +55,203 @@ class _ListNotePageState extends State<ListNotePage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => NotePage(note: note)),
-    ).then((value) => getNotes());
+    ).then((_) => _loadNotes());
   }
 
-  onNoteLongClick(NoteData note) {
-    int index = listNotes.indexOf(note);
-
+  void _onNoteLongClick(NoteData note) {
+    if (note.id == null) return;
     setState(() {
-      inSelectMode = true;
-      listSelected[index] = !listSelected[index];
+      _inSelectMode = true;
+      _selectedNoteIds.add(note.id!);
     });
   }
 
-  onActionButtonClick() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CreateNotePage()),
-    ).then((value) => getNotes());
+  void _toggleSelectAll() {
+    setState(() {
+      if (_selectedNoteIds.length == _notes.length) {
+        _selectedNoteIds.clear();
+        _inSelectMode = false;
+      } else {
+        _selectedNoteIds
+            .addAll(_notes.where((n) => n.id != null).map((n) => n.id!));
+      }
+    });
   }
 
-  onDeleteNotesClick() {
-    if (getNumberSelected() == 0) {
-      showToast('No notes selected!');
+  void _onDeleteSelected() {
+    final count = _selectedNoteIds.length;
+    if (count == 0) {
+      showToast('No notes selected');
       return;
     }
 
     showAlertDialog(
       context,
-      title: 'Delete Notes',
-      content: 'Are you sure you want to delete the selected notes?',
+      title: 'Delete $count ${count == 1 ? 'note' : 'notes'}?',
+      content: 'These notes will be permanently removed from your device.',
       buttonText: 'Delete',
-      onConfirm: () {
-        for (int i = 0; i < listSelected.length; i++) {
-          if (listSelected[i]) {
-            NotesDatabase().deleteData(listNotes[i]);
-          }
-        }
-
-        setState(() {
-          inSelectMode = false;
-          listSelected = List.generate(listNotes.length, (index) => false);
-          getNotes();
-        });
-
+      onConfirm: () async {
         Navigator.of(context).pop();
+        await NotesDatabase().deleteMultiple(_selectedNoteIds.toList());
+
+        if (!mounted) return;
+        setState(() {
+          _inSelectMode = false;
+          _selectedNoteIds.clear();
+        });
+        _loadNotes();
       },
     );
   }
 
-  int getNumberSelected() {
-    int count = 0;
-    for (bool selected in listSelected) {
-      if (selected) count++;
-    }
-    return count;
-  }
-
-  @override
-  void initState() {
-    getNotes();
-
-    super.initState();
+  void _onCreateNote() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateNotePage()),
+    ).then((_) => _loadNotes());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: inSelectMode ? appBarInSelectedMode() : appBar(),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: listNotes.length,
-                  itemBuilder: noteWidget,
-                  physics: const NeverScrollableScrollPhysics(),
-                ),
-                spaceV(),
-              ],
-            ),
-          ),
-
-          //! Empty Note
-          Visibility(
-            visible: listNotes.isEmpty,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    CupertinoIcons.doc,
-                    size: 64,
-                  ),
-                  spaceV(8),
-                  Text(
-                    'No Notes',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-
-      //! Floating Action Button
-      floatingActionButton: FloatingActionButton(
-        onPressed: onActionButtonClick,
-        child: Icon(
-          CupertinoIcons.pencil_outline,
-          color: isDarkMode(context) ? Colors.black : Colors.white,
-        ),
-      ),
-    );
-  }
-
-  PreferredSizeWidget appBar() {
-    return AppBar(
-      centerTitle: true,
-      title: Text(widget.appName),
-    );
-  }
-
-  PreferredSizeWidget appBarInSelectedMode() {
-    return AppBar(
-      centerTitle: true,
-      title: Text('Selected Notes ${getNumberSelected()}'),
-      leading: IconButton(
-        onPressed: () {
-          setState(() {
-            inSelectMode = false;
-            listSelected = List.generate(listNotes.length, (index) => false);
-          });
-        },
-        icon: const Icon(CupertinoIcons.xmark),
-      ),
-      actions: [
-        IconButton(
-          onPressed: onDeleteNotesClick,
-          icon: const Icon(CupertinoIcons.trash, size: 20),
-        ),
-      ],
-    );
-  }
-
-  Widget noteWidget(BuildContext context, int index) {
     final theme = Theme.of(context);
-    final NoteData note = listNotes[index];
-    final screenWidth = MediaQuery.of(context).size.width;
-    final color = listColors[getIndexColorFromStr(note.color)];
+    final colorScheme = theme.colorScheme;
 
-    return Container(
-      height: 64,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: inSelectMode && listSelected[index]
-            ? theme.cardColor.withOpacity(0.3)
-            : theme.cardColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Stack(
-        children: [
-          //! Wave Background
-          Stack(
-            alignment: Alignment.centerRight,
-            children: [
-              Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      //theme.cardColor,
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.transparent,
-                      color.withOpacity(0.3),
-                    ],
-                  ),
-                ),
-              ),
-              ClipRect(
-                child: Transform.rotate(
-                  angle: -50 * 3.1415927 / 180,
-                  child: Container(
-                    height: 100,
-                    width: 200,
-                    margin: const EdgeInsets.only(bottom: 4),
-                    decoration: BoxDecoration(
-                      color: inSelectMode && listSelected[index]
-                          ? theme.cardColor.withOpacity(0.3)
-                          : theme.cardColor,
-                      //color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          //! Note Content
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => onNoteClick(note),
-              onLongPress: () => onNoteLongClick(note),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      note.title.capitalize(),
-                      overflow: TextOverflow.fade,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    spaceV(4),
-                    SizedBox(
-                      width: screenWidth * 0.7,
-                      child: Text(
-                        maxLines: 1,
-                        note.body,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          Visibility(
-            visible: inSelectMode,
-            child: Container(
-              alignment: Alignment.centerRight,
-              width: double.infinity,
-              height: double.infinity,
-              child: Checkbox(
-                value: listSelected[index],
-                onChanged: (value) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          if (_inSelectMode)
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              surfaceTintColor: colorScheme.surfaceTint,
+              scrolledUnderElevation: 3.0,
+              leading: IconButton(
+                onPressed: () {
                   setState(() {
-                    listSelected[index] = value!;
+                    _inSelectMode = false;
+                    _selectedNoteIds.clear();
                   });
                 },
+                icon: const Icon(Icons.close_rounded),
+              ),
+              title: Text(
+                '${_selectedNoteIds.length} selected',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  tooltip: 'Select all',
+                  onPressed: _toggleSelectAll,
+                  icon: const Icon(Icons.select_all_rounded),
+                ),
+                IconButton(
+                  tooltip: 'Delete',
+                  onPressed: _onDeleteSelected,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                ),
+                const SizedBox(width: 4),
+              ],
+            )
+          else
+            SliverAppBar.large(
+              title: Text(
+                widget.appName,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              surfaceTintColor: colorScheme.surfaceTint,
+              scrolledUnderElevation: 0.0,
+              actions: [
+                if (_notes.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Center(
+                      child: Badge(
+                        backgroundColor: colorScheme.secondaryContainer,
+                        textColor: colorScheme.onSecondaryContainer,
+                        label: Text('${_notes.length}'),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          if (!_isLoading && _notes.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildEmptyState(context),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final note = _notes[index];
+                    final isSelected =
+                        note.id != null && _selectedNoteIds.contains(note.id);
+                    return NoteCard(
+                      note: note,
+                      isSelected: isSelected,
+                      inSelectMode: _inSelectMode,
+                      onTap: () => _onNoteClick(note),
+                      onLongPress: () => _onNoteLongClick(note),
+                      onSelectChanged: (val) => _onNoteClick(note),
+                    );
+                  },
+                  childCount: _notes.length,
+                ),
               ),
             ),
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        elevation: 2,
+        onPressed: _onCreateNote,
+        child: const Icon(Icons.add_rounded, size: 28),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.note_alt_outlined,
+                size: 56,
+                color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No notes yet',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap the button below to write your first note',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

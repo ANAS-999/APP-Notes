@@ -2,32 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  String currentTheme = 'system';
+  static const String themeKey = 'theme_mode';
+  static const String lightMode = 'light';
+  static const String darkMode = 'dark';
+  static const String systemMode = 'system';
+
+  String _currentTheme = systemMode;
+
+  String get currentTheme => _currentTheme;
 
   ThemeMode get themeMode {
-    if (currentTheme == 'light') {
-      return ThemeMode.light;
-    } else if (currentTheme == 'dark') {
-      return ThemeMode.dark;
-    } else {
-      return ThemeMode.system;
+    switch (_currentTheme) {
+      case lightMode:
+        return ThemeMode.light;
+      case darkMode:
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
     }
   }
 
-  changeTheme(String theme) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString('theme', theme);
-
-    currentTheme = theme;
+  Future<void> changeTheme(String theme) async {
+    if (_currentTheme == theme) return;
+    _currentTheme = theme;
     notifyListeners();
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(themeKey, theme);
   }
 
-  initialize() async {
+  Future<void> initialize() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    currentTheme = prefs.getString('theme') ?? 'system';
-
+    _currentTheme = prefs.getString(themeKey) ??
+        prefs.getString('theme') ??
+        systemMode;
     notifyListeners();
   }
 }
+

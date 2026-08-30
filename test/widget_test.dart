@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:note_app/main.dart';
+import 'package:provider/provider.dart';
+import 'package:note_app/Themes/light_theme.dart';
+import 'package:note_app/Themes/dark_theme.dart';
+import 'package:note_app/Themes/theme_provider.dart';
+import 'package:note_app/Screens/settings_page.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('Light and Dark M3 themes initialize properly', () {
+    final light = buildLightTheme(null);
+    final dark = buildDarkTheme(null);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(light.useMaterial3, isTrue);
+    expect(dark.useMaterial3, isTrue);
+    expect(light.colorScheme.brightness, Brightness.light);
+    expect(dark.colorScheme.brightness, Brightness.dark);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('SettingsPage renders with Material You styling', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider<ThemeProvider>(
+        create: (_) => ThemeProvider(),
+        child: MaterialApp(
+          theme: buildLightTheme(null),
+          home: const SettingsPage(appName: 'Note App', version: '1.0.0'),
+        ),
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Settings'), findsAtLeastNWidgets(1));
+    expect(find.text('Preferences'), findsOneWidget);
+    expect(find.text('Theme Mode'), findsOneWidget);
+    expect(find.text('About & Support'), findsOneWidget);
+    expect(find.text('About App'), findsOneWidget);
   });
 }
+
+

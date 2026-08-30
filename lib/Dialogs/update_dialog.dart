@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/cupertino.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:fluid_dialog/fluid_dialog.dart';
 
 import '../Funcs/func.dart';
 
@@ -11,11 +9,13 @@ class UpdateDialog extends StatefulWidget {
   final dynamic data;
   final String version;
   final String appName;
-  const UpdateDialog(
-      {super.key,
-      required this.appName,
-      required this.version,
-      required this.data});
+
+  const UpdateDialog({
+    super.key,
+    required this.appName,
+    required this.version,
+    required this.data,
+  });
 
   @override
   State<UpdateDialog> createState() => _UpdateDialogState();
@@ -31,230 +31,160 @@ class _UpdateDialogState extends State<UpdateDialog> {
   @override
   void initState() {
     super.initState();
-
-    if (widget.data == Null) {
+    if (widget.data == null) {
       checkUpdate();
     } else {
       getUpdate();
     }
   }
 
-  getUpdate() {
+  void getUpdate() {
     setState(() {
       isLoading = false;
-      newVersion = widget.data['version'];
-      newVersionLink = widget.data['link'];
+      newVersion = widget.data['version'] ?? '';
+      newVersionLink = widget.data['link'] ?? '';
       isUpdated = newVersion == widget.version;
     });
   }
 
-/*   onDownload() async {
-    final ref = FirebaseDatabase.instance.ref();
-    final link = await ref.child('${widget.appName}/link').get();
-
-    if (link.exists) {
-      if (!await launchUrl(Uri.parse(link.value.toString()),
-          mode: LaunchMode.externalApplication)) {
+  void onDownload() async {
+    if (!isUpdated && newVersionLink.isNotEmpty) {
+      final uri = Uri.parse(newVersionLink);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         if (!mounted) return;
-        DialogNavigator.of(context).close();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Something is wrong. Try again later"),
-        ));
+        Navigator.of(context).pop();
+        showToast('Could not open download link');
       }
     } else {
-      if (!mounted) return;
-      DialogNavigator.of(context).close();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Something is wrong. Try again later"),
-      ));
-    }
-  } */
-
-  onDownload() async {
-    if (!isUpdated) {
-      if (!await launchUrl(Uri.parse(newVersionLink),
-          mode: LaunchMode.externalApplication)) {
-        if (!mounted) return;
-        DialogNavigator.of(context).close();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Something is wrong. Try again later"),
-        ));
-      }
-    } else {
-      if (!mounted) return;
-      DialogNavigator.of(context).close();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Something is wrong. Try again later"),
-      ));
+      Navigator.of(context).pop();
     }
   }
 
-  checkUpdate() async {
+  void checkUpdate() async {
     setState(() {
       isLoading = true;
     });
 
     try {
       final appName = widget.appName.toLowerCase().replaceAll(' ', '_');
-
       final url = Uri.https(api, '/app/$appName');
-      final response = jsonDecode((await http.get(url)).body);
+      final res = await http.get(url);
+      final response = jsonDecode(res.body);
       final data = response['data'];
 
+      if (!mounted) return;
       setState(() {
         isLoading = false;
-        newVersion = data['version'];
-        newVersionLink = data['link'];
+        newVersion = data['version'] ?? '';
+        newVersionLink = data['link'] ?? '';
         isUpdated = newVersion == widget.version;
       });
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Could not connect to server!'),
-        ));
-      } else {
-        showToast('Could not connect to server!');
-      }
+    } catch (_) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      showSnackBar(context, 'Could not connect to update server');
     }
   }
 
-/*   checkUpdate() async {
-    setState(() {
-      isLoading = true;
-    });
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    final ref = FirebaseDatabase.instance.ref();
-    final snapshot = await ref.child('${widget.appName}/version').get();
-    if (snapshot.exists) {
-      String v = snapshot.value.toString();
-
-      setState(() {
-        newVersion = v;
-        isLoading = false;
-        isUpdated = v == widget.version;
-      });
-    } else {
-      if (!mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            "The application is not connected to our servers!",
-            style: TextStyle(color: Colors.white),
+    if (isLoading) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+        content: const Padding(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Checking for updates...'),
+            ],
           ),
         ),
       );
     }
-  }
- */
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: FutureBuilder(
-        future: null,
-        builder: (context, snapshot) {
-          if (isLoading) {
-            return Container(
-              padding: const EdgeInsets.all(20),
-              child: const CircularProgressIndicator(),
-            );
-          } else if (!isUpdated) {
-            return Container(
-              width: 300,
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        CupertinoIcons.rocket,
-                        size: 54,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Update available',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  Text(
-                    'There is a new version now $newVersion',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    'your version ${widget.version}',
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                          color: theme.brightness == Brightness.light
-                              ? Colors.grey[700]
-                              : Colors.grey,
-                        ),
-                  ),
-                  /* const SizedBox(height: 10),
-                  Text(
-                    textAlign: TextAlign.center,
-                    'If the new version does not work, uninstall the old version and try again',
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold),
-                  ), */
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      onDownload();
-                    },
-                    style: ElevatedButton.styleFrom(
-                        elevation: 12.0,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        textStyle: const TextStyle(color: Colors.white)),
-                    child: const Text(
-                      'Download',
-                      style: TextStyle(
-                        color: Colors.white,
-                        //color: Theme.of(context).textTheme.titleLarge!.color!,
-                      ),
-                    ),
-                  ),
-                ],
+    if (!isUpdated) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+        icon: Icon(
+          Icons.rocket_launch_rounded,
+          size: 40,
+          color: colorScheme.primary,
+        ),
+        title: const Text(
+          'Update Available',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'A newer version (v$newVersion) is available.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
-            );
-          }
-
-          return Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  CupertinoIcons.check_mark_circled,
-                  color: theme.iconTheme.color,
-                  size: 50,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Last Version ${widget.version}  ✔️',
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge!.color,
-                  ),
-                ),
-              ],
             ),
-          );
-        },
+            const SizedBox(height: 6),
+            Text(
+              'Current version: v${widget.version}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Later'),
+          ),
+          FilledButton(
+            onPressed: onDownload,
+            child: const Text('Download'),
+          ),
+        ],
+      );
+    }
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
       ),
+      icon: Icon(
+        Icons.check_circle_outline_rounded,
+        size: 44,
+        color: colorScheme.primary,
+      ),
+      title: const Text(
+        'Up to date',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.w700),
+      ),
+      content: Text(
+        'You are running the latest version (v${widget.version}).',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+      actions: [
+        FilledButton.tonal(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 }
+

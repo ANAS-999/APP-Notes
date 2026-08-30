@@ -1,30 +1,155 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
-//! Dark
-Color card = const Color(0xFF2A2A3D);
-Color primary = Colors.blue.shade300;
-Color secondary = const Color(0xFFE4E5E9);
-Color background = const Color(0xFF22222F);
+// Default seed color for fallback Material 3 palette
+const Color defaultSeedColor = Color(0xFF006492);
 
-ThemeData darkTheme = ThemeData(
-  cardColor: card,
-  useMaterial3: true,
-  fontFamily: 'TiltNeon',
+final ColorScheme defaultDarkColorScheme = ColorScheme.fromSeed(
+  seedColor: defaultSeedColor,
   brightness: Brightness.dark,
-  colorScheme: ColorScheme.dark(
-    primary: primary,
-    secondary: secondary,
-    surface: background,
-  ),
-  appBarTheme: const AppBarTheme(
-    elevation: 0,
-    scrolledUnderElevation: 0.0,
-    backgroundColor: Colors.transparent,
-  ),
-  textTheme: const TextTheme(
-    bodySmall: TextStyle(color: Color(0x7AFFFFFF), fontSize: 15),
-  ),
-  iconTheme: const IconThemeData(color: Colors.white),
-  dividerTheme: const DividerThemeData(color: Color(0x21FFFFFF)),
-  progressIndicatorTheme: const ProgressIndicatorThemeData(color: Colors.white),
 );
+
+ThemeData buildDarkTheme(ColorScheme? dynamicColorScheme) {
+  final colorScheme = (dynamicColorScheme ?? defaultDarkColorScheme).harmonized();
+
+  return ThemeData(
+    useMaterial3: true,
+    fontFamily: 'TiltNeon',
+    brightness: Brightness.dark,
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: colorScheme.surface,
+    appBarTheme: AppBarTheme(
+      elevation: 0,
+      scrolledUnderElevation: 3.0,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: colorScheme.surfaceTint,
+      foregroundColor: colorScheme.onSurface,
+      centerTitle: false,
+      systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+      titleTextStyle: TextStyle(
+        fontFamily: 'TiltNeon',
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: colorScheme.onSurface,
+      ),
+    ),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      margin: EdgeInsets.zero,
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      elevation: 2,
+      highlightElevation: 4,
+      backgroundColor: colorScheme.primaryContainer,
+      foregroundColor: colorScheme.onPrimaryContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      elevation: 2,
+      backgroundColor: colorScheme.surfaceContainer,
+      indicatorColor: colorScheme.secondaryContainer,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return TextStyle(
+            fontFamily: 'TiltNeon',
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          );
+        }
+        return TextStyle(
+          fontFamily: 'TiltNeon',
+          fontSize: 12,
+          fontWeight: FontWeight.normal,
+          color: colorScheme.onSurfaceVariant,
+        );
+      }),
+    ),
+    navigationRailTheme: NavigationRailThemeData(
+      elevation: 0,
+      backgroundColor: colorScheme.surfaceContainer,
+      indicatorColor: colorScheme.secondaryContainer,
+      selectedIconTheme: IconThemeData(color: colorScheme.onSecondaryContainer),
+      unselectedIconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
+      selectedLabelTextStyle: TextStyle(
+        fontFamily: 'TiltNeon',
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: colorScheme.onSurface,
+      ),
+      unselectedLabelTextStyle: TextStyle(
+        fontFamily: 'TiltNeon',
+        fontSize: 12,
+        fontWeight: FontWeight.normal,
+        color: colorScheme.onSurfaceVariant,
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: colorScheme.surfaceContainerHigh,
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      titleTextStyle: TextStyle(
+        fontFamily: 'TiltNeon',
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: colorScheme.onSurface,
+      ),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: colorScheme.surfaceContainerLow,
+      elevation: 1,
+      showDragHandle: true,
+      dragHandleColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+    ),
+    dividerTheme: DividerThemeData(
+      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+      thickness: 1,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: colorScheme.surfaceContainerHigh,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.primary, width: 2),
+      ),
+      hintStyle: TextStyle(
+        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+  );
+}
+
+ThemeData darkTheme = buildDarkTheme(null);
