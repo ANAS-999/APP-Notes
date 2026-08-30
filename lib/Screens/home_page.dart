@@ -23,6 +23,8 @@ class _HomePageState extends State<HomePage> {
     final dark = isDarkMode(context);
     final colorScheme = Theme.of(context).colorScheme;
 
+    print(Theme.of(context).scaffoldBackgroundColor);
+
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,

@@ -8,8 +8,18 @@ import 'Themes/dark_theme.dart';
 import 'Themes/light_theme.dart';
 import 'Themes/theme_provider.dart';
 
+late String version;
+
+Future<String> getVersion() async {
+  PackageInfo packageInfo = await PackageInfo.fromPlatform();
+  return packageInfo.version;
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  version = await getVersion();
+
   runApp(
     ChangeNotifierProvider<ThemeProvider>(
       create: (_) => ThemeProvider()..initialize(),
@@ -26,22 +36,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String version = '1.0.0';
   final String appName = 'Note App';
-
-  getVersion() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    if (!mounted) return;
-    setState(() {
-      version = packageInfo.version;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getVersion();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,4 +57,3 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-

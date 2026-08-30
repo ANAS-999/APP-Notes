@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:note_app/Funcs/func.dart';
 
 class AboutDialog extends StatelessWidget {
   final String appName;
@@ -23,11 +24,12 @@ class AboutDialog extends StatelessWidget {
         width: 64,
         height: 64,
         decoration: BoxDecoration(
-          color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+          color: Theme.of(context).scaffoldBackgroundColor,
           shape: BoxShape.circle,
         ),
         padding: const EdgeInsets.all(12),
-        child: Image.asset('assets/icons/logo.png'),
+        child: Image.asset(
+            'assets/icons/${isDarkMode(context) ? "icon_foreground_dark" : "icon_foreground"}.png'),
       ),
       title: Text(
         appName,
@@ -74,6 +76,7 @@ class AboutDialog extends StatelessWidget {
           ),
         ],
       ),
+      actionsAlignment: MainAxisAlignment.center,
       actions: [
         FilledButton.tonal(
           onPressed: () => Navigator.of(context).pop(),
