@@ -25,24 +25,32 @@ dependencies:
   path_provider: ^2.1.5
   sqflite: ^2.4.1
   path: ^1.9.0
-  flutter_native_splash: ^2.4.3
+  flutter_native_splash: ^2.4.8
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/icons/logo.png"
-  
+
   # --- The Adaptive Icon Settings for Android ---
-  adaptive_icon_background: "#EEFCFF"
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icons/icon_foreground.png"
-  
+
   min_sdk_android: 21
 
 flutter_native_splash:
   color: "#EBE8EC"
+  image: "assets/icons/icon_foreground.png"
+
   color_dark: "#1A1B20"
-  image: assets/icons/icon_foreground.png
-  image_dark: assets/icons/icon_foreground_dark.png
+  image_dark: "assets/icons/icon_foreground_dark.png"
+
+  android_12:
+    color: "#EBE8EC"
+    image: "assets/icons/icon_foreground.png"
+
+    color_dark: "#1A1B20"
+    image_dark: "assets/icons/icon_foreground_dark.png"
 
 dev_dependencies:
   flutter_test:

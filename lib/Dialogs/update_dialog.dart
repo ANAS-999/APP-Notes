@@ -26,7 +26,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   bool isUpdated = false;
   String newVersion = '';
   String newVersionLink = '';
-  final String api = 'anas-apps-api.vercel.app';
+  final String api = '';
 
   @override
   void initState() {
